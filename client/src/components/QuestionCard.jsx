@@ -197,7 +197,7 @@ const QuestionCard = ({
         Previous question
       </Button>
       <p>
-        Back navigation stays inside the current module and checkpoint segment.
+        Back navigation can cross modules but never an accepted checkpoint.
       </p>
     </QuestionActions>
   </QuestionSurface>

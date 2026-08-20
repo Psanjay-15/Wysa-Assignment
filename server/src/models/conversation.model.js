@@ -25,6 +25,15 @@ const moduleStateSchema = new mongoose.Schema(
   { _id: false },
 );
 
+const navigationPositionSchema = new mongoose.Schema(
+  {
+    moduleId: { type: String, required: true },
+    questionId: { type: String, required: true },
+    segmentNumber: { type: Number, required: true },
+  },
+  { _id: false },
+);
+
 const conversationSchema = new mongoose.Schema(
   {
     userId: {
@@ -48,6 +57,7 @@ const conversationSchema = new mongoose.Schema(
     currentQuestionId: { type: String, required: true },
     stateVersion: { type: Number, default: 1 },
     moduleStates: { type: [moduleStateSchema], required: true },
+    navigationStack: { type: [navigationPositionSchema], default: [] },
     completedAt: Date,
   },
   { timestamps: true },

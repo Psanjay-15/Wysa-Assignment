@@ -58,6 +58,9 @@ export const navigateBack = async (req, res) => {
   const currentModuleState = moduleStates.find(
     (state) => state.moduleId === conversation.currentModuleId,
   );
+  let navigationStack = conversation.navigationStack.map((position) =>
+    position.toObject(),
+  );
 
   if (
     !currentModuleState ||
@@ -70,10 +73,31 @@ export const navigateBack = async (req, res) => {
     });
   }
 
-  if (currentModuleState.questionPath.length < 2) {
+  if (navigationStack.length === 0) {
+    navigationStack = currentModuleState.questionPath.map((questionId) => ({
+      moduleId: currentModuleState.moduleId,
+      questionId,
+      segmentNumber: currentModuleState.segmentNumber,
+    }));
+  }
+
+  const currentPosition = navigationStack.at(-1);
+
+  if (
+    currentPosition?.moduleId !== conversation.currentModuleId ||
+    currentPosition?.questionId !== conversation.currentQuestionId ||
+    currentPosition?.segmentNumber !== currentModuleState.segmentNumber
+  ) {
+    return res.status(500).json({
+      success: false,
+      message: "The conversation has an invalid navigation state",
+    });
+  }
+
+  if (navigationStack.length < 2) {
     return res.status(409).json({
       success: false,
-      message: "There is no previous question in the current module state",
+      message: "There is no previous question in the current conversation state",
       data: {
         currentModuleId: conversation.currentModuleId,
         currentQuestionId: conversation.currentQuestionId,
@@ -82,10 +106,32 @@ export const navigateBack = async (req, res) => {
     });
   }
 
-  const previousQuestionId = currentModuleState.questionPath.at(-2);
-  const revertedAnswer = currentModuleState.answers.at(-1);
+  const previousPosition = navigationStack.at(-2);
+  const previousModuleState = moduleStates.find(
+    (state) => state.moduleId === previousPosition.moduleId,
+  );
+  const sameModule = previousPosition.moduleId === conversation.currentModuleId;
+  const expectedPreviousQuestionId = sameModule
+    ? currentModuleState.questionPath.at(-2)
+    : previousModuleState?.questionPath.at(-1);
 
-  if (!revertedAnswer || revertedAnswer.questionId !== previousQuestionId) {
+  if (
+    !previousModuleState ||
+    previousModuleState.segmentNumber !== previousPosition.segmentNumber ||
+    expectedPreviousQuestionId !== previousPosition.questionId
+  ) {
+    return res.status(409).json({
+      success: false,
+      message: "Back navigation cannot cross an inactive checkpoint segment",
+    });
+  }
+
+  const revertedAnswer = previousModuleState.answers.at(-1);
+
+  if (
+    !revertedAnswer ||
+    revertedAnswer.questionId !== previousPosition.questionId
+  ) {
     return res.status(500).json({
       success: false,
       message: "The conversation does not have a valid previous answer",
@@ -93,14 +139,14 @@ export const navigateBack = async (req, res) => {
   }
 
   const flow = await Flow.findById(conversation.flow);
-  const currentModule = flow?.modules.find(
-    (module) => module.moduleId === conversation.currentModuleId,
+  const previousModule = flow?.modules.find(
+    (module) => module.moduleId === previousPosition.moduleId,
   );
-  const previousQuestion = currentModule?.questions.find(
-    (question) => question.questionId === previousQuestionId,
+  const previousQuestion = previousModule?.questions.find(
+    (question) => question.questionId === previousPosition.questionId,
   );
 
-  if (!flow || !currentModule || !previousQuestion) {
+  if (!flow || !previousModule || !previousQuestion) {
     return res.status(500).json({
       success: false,
       message: "The conversation flow has a broken previous-question reference",
@@ -109,8 +155,17 @@ export const navigateBack = async (req, res) => {
 
   const fromQuestionId = conversation.currentQuestionId;
   currentModuleState.questionPath.pop();
-  currentModuleState.answers.pop();
-  currentModuleState.currentQuestionId = previousQuestionId;
+  currentModuleState.currentQuestionId =
+    currentModuleState.questionPath.at(-1) || fromQuestionId;
+  previousModuleState.answers.pop();
+  previousModuleState.currentQuestionId = previousPosition.questionId;
+
+  if (!sameModule) {
+    currentModuleState.status = "suspended";
+    previousModuleState.status = "active";
+  }
+
+  navigationStack.pop();
 
   const newStateVersion = expectedStateVersion + 1;
   const session = await mongoose.startSession();
@@ -129,9 +184,11 @@ export const navigateBack = async (req, res) => {
         },
         {
           $set: {
-            currentQuestionId: previousQuestionId,
+            currentModuleId: previousPosition.moduleId,
+            currentQuestionId: previousPosition.questionId,
             stateVersion: newStateVersion,
             moduleStates,
+            navigationStack,
           },
         },
         { returnDocument: "after", runValidators: true, session },
@@ -146,14 +203,14 @@ export const navigateBack = async (req, res) => {
               eventType: "BACK_NAVIGATED",
               stateVersion: newStateVersion,
               eventOrder: 1,
-              moduleId: conversation.currentModuleId,
-              questionId: previousQuestionId,
+              moduleId: previousPosition.moduleId,
+              questionId: previousPosition.questionId,
               optionId: revertedAnswer.optionId,
               fromModuleId: conversation.currentModuleId,
               fromQuestionId,
-              toModuleId: conversation.currentModuleId,
-              toQuestionId: previousQuestionId,
-              segmentNumber: currentModuleState.segmentNumber,
+              toModuleId: previousPosition.moduleId,
+              toQuestionId: previousPosition.questionId,
+              segmentNumber: previousModuleState.segmentNumber,
             },
           ],
           { session },
@@ -183,7 +240,7 @@ export const navigateBack = async (req, res) => {
         status: updatedConversation.status,
         stateVersion: updatedConversation.stateVersion,
         moduleId: updatedConversation.currentModuleId,
-        canGoBack: currentModuleState.questionPath.length > 1,
+        canGoBack: navigationStack.length > 1,
         previousOptionId: revertedAnswer.optionId,
         question: formatQuestion(previousQuestion),
       },

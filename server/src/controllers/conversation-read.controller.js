@@ -84,7 +84,10 @@ export const getCurrentQuestion = async (req, res) => {
       stale,
       requestedQuestion,
       currentModuleId: conversation.currentModuleId,
-      canGoBack: currentModuleState.questionPath.length > 1,
+      canGoBack:
+        conversation.navigationStack.length > 0
+          ? conversation.navigationStack.length > 1
+          : currentModuleState.questionPath.length > 1,
       question: formatQuestion(currentQuestion),
     },
   });

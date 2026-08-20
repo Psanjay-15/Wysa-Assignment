@@ -64,6 +64,13 @@ export const startConversation = async (req, res) => {
                 questionPath: [question.questionId],
               },
             ],
+            navigationStack: [
+              {
+                moduleId: module.moduleId,
+                questionId: question.questionId,
+                segmentNumber: 1,
+              },
+            ],
           },
         ],
         { session },
@@ -221,6 +228,17 @@ export const answerQuestion = async (req, res) => {
   const currentModuleState = moduleStates.find(
     (state) => state.moduleId === conversation.currentModuleId,
   );
+  let navigationStack = conversation.navigationStack.map((position) =>
+    position.toObject(),
+  );
+
+  if (navigationStack.length === 0) {
+    navigationStack = currentModuleState.questionPath.map((questionId) => ({
+      moduleId: currentModuleState.moduleId,
+      questionId,
+      segmentNumber: currentModuleState.segmentNumber,
+    }));
+  }
 
   currentModuleState.answers.push({ questionId, optionId, answeredAt: now });
 
@@ -265,6 +283,21 @@ export const answerQuestion = async (req, res) => {
       };
       moduleStates.push(nextModuleState);
     }
+  }
+
+  if (selectedOption.next.type === "question") {
+    if (currentQuestion.isCheckpoint) {
+      navigationStack = [];
+    }
+
+    const nextModuleState = moduleStates.find(
+      (state) => state.moduleId === nextModule.moduleId,
+    );
+    navigationStack.push({
+      moduleId: nextModule.moduleId,
+      questionId: nextQuestion.questionId,
+      segmentNumber: nextModuleState.segmentNumber,
+    });
   }
 
   const newStateVersion = expectedStateVersion + 1;
@@ -348,6 +381,7 @@ export const answerQuestion = async (req, res) => {
             currentQuestionId,
             stateVersion: newStateVersion,
             moduleStates,
+            navigationStack,
             completedAt: status === "completed" ? now : null,
           },
         },
@@ -398,9 +432,7 @@ export const answerQuestion = async (req, res) => {
         status: updatedConversation.status,
         stateVersion: updatedConversation.stateVersion,
         moduleId: nextModule.moduleId,
-        canGoBack:
-          moduleStates.find((state) => state.moduleId === nextModule.moduleId)
-            ?.questionPath.length > 1,
+        canGoBack: navigationStack.length > 1,
         question: formatQuestion(nextQuestion),
       },
     });
