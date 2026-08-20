@@ -25,6 +25,7 @@ const conversationHistorySchema = new mongoose.Schema(
       ],
     },
     stateVersion: { type: Number, required: true },
+    eventOrder: { type: Number, required: true, default: 1 },
     moduleId: String,
     questionId: String,
     optionId: String,
@@ -40,6 +41,10 @@ const conversationHistorySchema = new mongoose.Schema(
 );
 
 conversationHistorySchema.index({ conversationId: 1, createdAt: 1 });
+conversationHistorySchema.index(
+  { conversationId: 1, stateVersion: 1, eventOrder: 1 },
+  { unique: true },
+);
 
 const ConversationHistory = mongoose.model(
   "ConversationHistory",
