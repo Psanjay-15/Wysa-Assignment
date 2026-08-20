@@ -43,6 +43,7 @@ export const getCurrentQuestion = async (req, res) => {
         stale: isDeepLink,
         requestedQuestion,
         currentModuleId: null,
+        canGoBack: false,
         question: null,
       },
     });
@@ -55,8 +56,11 @@ export const getCurrentQuestion = async (req, res) => {
   const currentQuestion = currentModule?.questions.find(
     (question) => question.questionId === conversation.currentQuestionId,
   );
+  const currentModuleState = conversation.moduleStates.find(
+    (state) => state.moduleId === conversation.currentModuleId,
+  );
 
-  if (!flow || !currentModule || !currentQuestion) {
+  if (!flow || !currentModule || !currentQuestion || !currentModuleState) {
     return res.status(500).json({
       success: false,
       message: "The conversation flow has a broken question reference",
@@ -80,6 +84,7 @@ export const getCurrentQuestion = async (req, res) => {
       stale,
       requestedQuestion,
       currentModuleId: conversation.currentModuleId,
+      canGoBack: currentModuleState.questionPath.length > 1,
       question: formatQuestion(currentQuestion),
     },
   });

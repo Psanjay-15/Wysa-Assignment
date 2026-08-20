@@ -236,6 +236,8 @@ const normalizeConversation = (data, previousModuleId = "") => ({
   status: data.status,
   stateVersion: data.stateVersion,
   moduleId: data.moduleId || data.currentModuleId || previousModuleId,
+  canGoBack: Boolean(data.canGoBack),
+  previousOptionId: data.previousOptionId || null,
   question: data.question,
 });
 
@@ -252,6 +254,7 @@ const ConversationPage = () => {
   const [loading, setLoading] = useState(!location.state?.conversation);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [selecting, setSelecting] = useState("");
+  const [backing, setBacking] = useState(false);
   const [error, setError] = useState("");
   const [historyOpen, setHistoryOpen] = useState(false);
   const [deepLinkOpen, setDeepLinkOpen] = useState(false);
@@ -320,6 +323,32 @@ const ConversationPage = () => {
       }
     } finally {
       setSelecting("");
+    }
+  };
+
+  const goBack = async () => {
+    if (!conversation?.question || !conversation.canGoBack) return;
+
+    setBacking(true);
+    setError("");
+
+    try {
+      const response = await api.post(
+        `/conversations/${conversationId}/back`,
+        { expectedStateVersion: conversation.stateVersion },
+      );
+      setConversation((current) =>
+        normalizeConversation(response.data.data, current?.moduleId),
+      );
+      await loadHistory();
+    } catch (requestError) {
+      setError(getApiError(requestError));
+      if (requestError.response?.status === 409) {
+        await loadCurrent();
+        await loadHistory();
+      }
+    } finally {
+      setBacking(false);
     }
   };
 
@@ -461,7 +490,11 @@ const ConversationPage = () => {
               question={conversation.question}
               stateVersion={conversation.stateVersion}
               selecting={selecting}
+              selectedOptionId={conversation.previousOptionId}
+              canGoBack={conversation.canGoBack}
+              backing={backing}
               onSelect={submitAnswer}
+              onBack={goBack}
             />
           )}
         </MainColumn>

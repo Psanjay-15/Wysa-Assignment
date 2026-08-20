@@ -93,6 +93,7 @@ export const startConversation = async (req, res) => {
         status: conversation.status,
         stateVersion: conversation.stateVersion,
         moduleId: module.moduleId,
+        canGoBack: false,
         question: formatQuestion(question),
       },
     });
@@ -383,6 +384,7 @@ export const answerQuestion = async (req, res) => {
           conversationId: updatedConversation._id,
           status: updatedConversation.status,
           stateVersion: updatedConversation.stateVersion,
+          canGoBack: false,
           question: null,
         },
       });
@@ -396,6 +398,9 @@ export const answerQuestion = async (req, res) => {
         status: updatedConversation.status,
         stateVersion: updatedConversation.stateVersion,
         moduleId: nextModule.moduleId,
+        canGoBack:
+          moduleStates.find((state) => state.moduleId === nextModule.moduleId)
+            ?.questionPath.length > 1,
         question: formatQuestion(nextQuestion),
       },
     });

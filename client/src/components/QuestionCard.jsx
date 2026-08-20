@@ -1,6 +1,12 @@
-import { ArrowRight, Check, Flag, RefreshCw } from "lucide-react";
+import {
+  ArrowRight,
+  Check,
+  CornerUpLeft,
+  Flag,
+  RefreshCw,
+} from "lucide-react";
 import styled from "styled-components";
-import { Badge, Card, Spinner } from "./ui.js";
+import { Badge, Button, Card, Spinner } from "./ui.js";
 
 const QuestionSurface = styled(Card)`
   padding: clamp(24px, 5vw, 44px);
@@ -58,6 +64,33 @@ const Options = styled.div`
   position: relative;
 `;
 
+const QuestionActions = styled.div`
+  margin-top: 24px;
+  padding-top: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  border-top: 1px solid ${({ theme }) => theme.colors.border};
+  position: relative;
+
+  p {
+    margin: 0;
+    color: ${({ theme }) => theme.colors.textFaint};
+    font-size: 0.78rem;
+    text-align: right;
+  }
+
+  @media (max-width: 560px) {
+    align-items: stretch;
+    flex-direction: column;
+
+    p {
+      text-align: left;
+    }
+  }
+`;
+
 const Option = styled.button`
   width: 100%;
   min-height: 64px;
@@ -67,11 +100,13 @@ const Option = styled.button`
   gap: 14px;
   padding: 12px 16px;
   color: ${({ theme }) => theme.colors.text};
-  background: ${({ theme, $loading }) =>
-    $loading ? theme.colors.primarySoft : theme.colors.surface};
+  background: ${({ theme, $loading, $selected }) =>
+    $loading || $selected ? theme.colors.primarySoft : theme.colors.surface};
   border: 1px solid
-    ${({ theme, $loading }) =>
-      $loading ? theme.colors.primary : theme.colors.borderStrong};
+    ${({ theme, $loading, $selected }) =>
+      $loading || $selected
+        ? theme.colors.primary
+        : theme.colors.borderStrong};
   border-radius: ${({ theme }) => theme.radius.medium};
   text-align: left;
   cursor: pointer;
@@ -101,12 +136,23 @@ const OptionMark = styled.span`
   height: 34px;
   display: grid;
   place-items: center;
-  color: ${({ theme }) => theme.colors.primary};
-  background: ${({ theme }) => theme.colors.primarySoft};
+  color: ${({ theme, $selected }) =>
+    $selected ? "#fff" : theme.colors.primary};
+  background: ${({ theme, $selected }) =>
+    $selected ? theme.colors.primary : theme.colors.primarySoft};
   border-radius: 11px;
 `;
 
-const QuestionCard = ({ question, stateVersion, selecting, onSelect }) => (
+const QuestionCard = ({
+  question,
+  stateVersion,
+  selecting,
+  selectedOptionId,
+  canGoBack,
+  backing,
+  onSelect,
+  onBack,
+}) => (
   <QuestionSurface $elevated>
     <QuestionHeader>
       <Badge $tone={question.isCheckpoint ? "amber" : undefined}>
@@ -120,15 +166,18 @@ const QuestionCard = ({ question, stateVersion, selecting, onSelect }) => (
     <Options>
       {question.options.map((option) => {
         const loading = selecting === option.optionId;
+        const selected = selectedOptionId === option.optionId;
         return (
           <Option
             key={option.optionId}
             type="button"
             $loading={loading}
-            disabled={Boolean(selecting)}
+            $selected={selected}
+            aria-pressed={selected}
+            disabled={Boolean(selecting) || backing}
             onClick={() => onSelect(option.optionId)}
           >
-            <OptionMark>
+            <OptionMark $selected={selected}>
               {loading ? <Spinner $size={17} /> : <Check size={17} />}
             </OptionMark>
             <strong>{option.text}</strong>
@@ -137,6 +186,20 @@ const QuestionCard = ({ question, stateVersion, selecting, onSelect }) => (
         );
       })}
     </Options>
+    <QuestionActions>
+      <Button
+        type="button"
+        $variant="secondary"
+        onClick={onBack}
+        disabled={!canGoBack || Boolean(selecting) || backing}
+      >
+        {backing ? <Spinner $size={16} /> : <CornerUpLeft size={17} />}
+        Previous question
+      </Button>
+      <p>
+        Back navigation stays inside the current module and checkpoint segment.
+      </p>
+    </QuestionActions>
   </QuestionSurface>
 );
 

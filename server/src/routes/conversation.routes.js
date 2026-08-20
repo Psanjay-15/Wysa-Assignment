@@ -3,6 +3,7 @@ import {
   answerQuestion,
   startConversation,
 } from "../controllers/conversation.controller.js";
+import { navigateBack } from "../controllers/conversation-back.controller.js";
 import {
   getConversationHistory,
   getCurrentQuestion,
@@ -20,5 +21,6 @@ router.get(
   getCurrentQuestion,
 );
 router.post("/:conversationId/answers", verifyJWT, answerQuestion);
+router.post("/:conversationId/back", verifyJWT, navigateBack);
 
 export default router;

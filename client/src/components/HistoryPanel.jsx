@@ -136,6 +136,9 @@ const eventDescription = (event) => {
   if (event.eventType === "CONVERSATION_COMPLETED") {
     return `Completed from ${event.moduleId}`;
   }
+  if (event.eventType === "BACK_NAVIGATED") {
+    return `${event.fromQuestionId} → ${event.toQuestionId} · reopened ${event.optionId}`;
+  }
   return `${event.toModuleId || event.moduleId} · ${event.toQuestionId || event.questionId}`;
 };
 
