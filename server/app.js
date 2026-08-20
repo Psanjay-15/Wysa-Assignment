@@ -1,6 +1,6 @@
 import cors from "cors";
 import express from "express";
-
+import routes from "./src/routes/routes.js";
 const app = express();
 
 app.use(
@@ -18,5 +18,7 @@ app.get("/api/health", (_req, res) => {
     message: "Wysa Conversation Flow API is running",
   });
 });
+
+app.use(routes);
 
 export default app;
