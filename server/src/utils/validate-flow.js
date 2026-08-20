@@ -94,7 +94,7 @@ const validateFlow = (flow) => {
           continue;
         }
 
-        const targetQuestionExists = targetModule.questions.some(
+        const targetQuestionExists = (targetModule.questions || []).some(
           (item) => item.questionId === option.next.questionId,
         );
 
