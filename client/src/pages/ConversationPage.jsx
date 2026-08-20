@@ -176,7 +176,11 @@ const CompletionCard = styled(Card)`
   place-items: center;
   text-align: center;
   background:
-    radial-gradient(circle at 50% 25%, rgba(220, 238, 229, 0.9), transparent 36%),
+    radial-gradient(
+      circle at 50% 25%,
+      rgba(220, 238, 229, 0.9),
+      transparent 36%
+    ),
     ${({ theme }) => theme.colors.surface};
 
   > div {
@@ -256,7 +260,9 @@ const ConversationPage = () => {
   const loadHistory = useCallback(async () => {
     setHistoryLoading(true);
     try {
-      const response = await api.get(`/conversations/${conversationId}/history`);
+      const response = await api.get(
+        `/conversations/${conversationId}/history`,
+      );
       setEvents(response.data.data.events);
     } catch (requestError) {
       setError(getApiError(requestError));
@@ -269,7 +275,9 @@ const ConversationPage = () => {
     setLoading(true);
     setError("");
     try {
-      const response = await api.get(`/conversations/${conversationId}/current`);
+      const response = await api.get(
+        `/conversations/${conversationId}/current`,
+      );
       setConversation((current) =>
         normalizeConversation(response.data.data, current?.moduleId),
       );
@@ -321,14 +329,18 @@ const ConversationPage = () => {
       setCopied(true);
       window.setTimeout(() => setCopied(false), 1600);
     } catch {
-      setError("Could not copy automatically. Select the conversation ID from the URL.");
+      setError(
+        "Could not copy automatically. Select the conversation ID from the URL.",
+      );
     }
   };
 
   if (loading && !conversation) {
     return (
       <AppLayout>
-        <LoadingCard><Spinner $size={28} /></LoadingCard>
+        <LoadingCard>
+          <Spinner $size={28} />
+        </LoadingCard>
       </AppLayout>
     );
   }
@@ -339,8 +351,14 @@ const ConversationPage = () => {
         <EmptyCard>
           <div>
             <h2>Conversation unavailable</h2>
-            <MutedText>{error || "This conversation could not be loaded."}</MutedText>
-            <Button type="button" style={{ marginTop: 20 }} onClick={() => navigate("/app")}>
+            <MutedText>
+              {error || "This conversation could not be loaded."}
+            </MutedText>
+            <Button
+              type="button"
+              style={{ marginTop: 20 }}
+              onClick={() => navigate("/app")}
+            >
               Return to launcher
             </Button>
           </div>
@@ -353,45 +371,86 @@ const ConversationPage = () => {
     <AppLayout>
       <Header>
         <Breadcrumb>
-          <IconButton type="button" $variant="secondary" aria-label="Back to launcher" onClick={() => navigate("/app")}>
+          <IconButton
+            type="button"
+            $variant="secondary"
+            aria-label="Back to launcher"
+            onClick={() => navigate("/app")}
+          >
             <ArrowLeft size={18} />
           </IconButton>
           <div>
             <Badge>{conversation.status}</Badge>
-            <h1>{moduleNames[conversation.moduleId] || conversation.moduleId}</h1>
+            <h1>
+              {moduleNames[conversation.moduleId] || conversation.moduleId}
+            </h1>
           </div>
         </Breadcrumb>
         <HeaderActions>
-          <Button type="button" $variant="secondary" $compact onClick={loadCurrent} disabled={loading}>
+          <Button
+            type="button"
+            $variant="secondary"
+            $compact
+            onClick={loadCurrent}
+            disabled={loading}
+          >
             {loading ? <Spinner /> : <RefreshCw size={16} />} Refresh
           </Button>
-          <Button type="button" $variant="secondary" $compact onClick={() => setDeepLinkOpen(true)} disabled={!conversation.question}>
+          <Button
+            type="button"
+            $variant="secondary"
+            $compact
+            onClick={() => setDeepLinkOpen(true)}
+            disabled={!conversation.question}
+          >
             <Link2 size={16} /> Test deep link
           </Button>
-          <Button type="button" $variant="secondary" $compact onClick={() => { setHistoryOpen(true); loadHistory(); }}>
+          <Button
+            type="button"
+            $variant="secondary"
+            $compact
+            onClick={() => {
+              setHistoryOpen(true);
+              loadHistory();
+            }}
+          >
             <History size={16} /> History
           </Button>
         </HeaderActions>
       </Header>
 
-      {error && <Alert role="alert" style={{ marginBottom: 16 }}>{error}</Alert>}
+      {error && (
+        <Alert role="alert" style={{ marginBottom: 16 }}>
+          {error}
+        </Alert>
+      )}
 
       <Workspace>
         <MainColumn>
           {conversation.status === "completed" ? (
             <CompletionCard $elevated>
               <div>
-                <CompletionIcon><CheckCircle2 size={34} /></CompletionIcon>
+                <CompletionIcon>
+                  <CheckCircle2 size={34} />
+                </CompletionIcon>
                 <h1>Flow completed.</h1>
                 <p>
                   The final answer is safely stored in permanent history. Start
-                  another module or inspect the event timeline for this conversation.
+                  another module or inspect the event timeline for this
+                  conversation.
                 </p>
                 <CompletionActions>
                   <Button type="button" onClick={() => navigate("/app")}>
                     <RotateCcw size={17} /> Start another flow
                   </Button>
-                  <Button type="button" $variant="secondary" onClick={() => { setHistoryOpen(true); loadHistory(); }}>
+                  <Button
+                    type="button"
+                    $variant="secondary"
+                    onClick={() => {
+                      setHistoryOpen(true);
+                      loadHistory();
+                    }}
+                  >
                     <History size={17} /> View history
                   </Button>
                 </CompletionActions>
@@ -411,26 +470,33 @@ const ConversationPage = () => {
           <StateCard>
             <h2>Live state snapshot</h2>
             <StateRows>
-              <div><dt>Status</dt><dd>{conversation.status}</dd></div>
-              <div><dt>State version</dt><dd>v{conversation.stateVersion}</dd></div>
-              <div><dt>Module</dt><dd>{conversation.moduleId || "—"}</dd></div>
-              <div><dt>Question</dt><dd>{conversation.question?.questionId || "Complete"}</dd></div>
-              <div><dt>History events</dt><dd>{events.length}</dd></div>
+              <div>
+                <dt>Status</dt>
+                <dd>{conversation.status}</dd>
+              </div>
+              <div>
+                <dt>State version</dt>
+                <dd>v{conversation.stateVersion}</dd>
+              </div>
+              <div>
+                <dt>Module</dt>
+                <dd>{conversation.moduleId || "—"}</dd>
+              </div>
+              <div>
+                <dt>Question</dt>
+                <dd>{conversation.question?.questionId || "Complete"}</dd>
+              </div>
+              <div>
+                <dt>History events</dt>
+                <dd>{events.length}</dd>
+              </div>
             </StateRows>
             <Divider style={{ margin: "17px 0" }} />
             <Button type="button" $variant="ghost" $compact onClick={copyId}>
-              <Clipboard size={15} /> {copied ? "Copied" : "Copy conversation ID"}
+              <Clipboard size={15} />{" "}
+              {copied ? "Copied" : "Copy conversation ID"}
             </Button>
           </StateCard>
-          <SafetyCard>
-            <ShieldCheck size={21} />
-            <h3>The client never chooses the route.</h3>
-            <p>
-              Only the question ID, option ID, and expected state version are sent.
-              The API validates and returns the next canonical question.
-            </p>
-            <Badge><Code2 size={13} /> Server controlled</Badge>
-          </SafetyCard>
         </StateRail>
       </Workspace>
 
