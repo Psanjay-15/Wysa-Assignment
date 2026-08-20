@@ -21,4 +21,19 @@ app.get("/api/health", (_req, res) => {
 
 app.use(routes);
 
+app.use((_req, res) => {
+  res.status(404).json({
+    success: false,
+    message: "Route not found",
+  });
+});
+
+app.use((error, _req, res, _next) => {
+  console.error(error);
+  res.status(500).json({
+    success: false,
+    message: "Internal server error",
+  });
+});
+
 export default app;
