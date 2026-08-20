@@ -43,7 +43,7 @@ export const register = async (req, res) => {
       success: true,
       message: "User registered successfully",
       data: {
-        user,
+        user: user.email,
         token: generateToken(user._id.toString()),
       },
     });
@@ -82,7 +82,7 @@ export const login = async (req, res) => {
     success: true,
     message: "Login successful",
     data: {
-      user,
+      user: user.email,
       token: generateToken(user._id.toString()),
     },
   });
